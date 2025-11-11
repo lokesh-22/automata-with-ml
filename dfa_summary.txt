@@ -1,0 +1,15 @@
+Regex to DFA Report
+===================
+
+Regex (body): (a|b)*abb
+Alphabet    : ab
+
+DFA states         : 5
+DFA accepting      : 1
+Min DFA states     : 4
+Min DFA accepting  : 1
+
+Notes:
+- DOT files written (dfa.dot, min_dfa.dot). Render with:
+  dot -Tpng dfa.dot -o dfa.png
+  dot -Tpng min_dfa.dot -o min_dfa.png
