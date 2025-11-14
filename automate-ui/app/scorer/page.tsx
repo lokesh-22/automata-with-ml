@@ -61,7 +61,7 @@ export default function ScorerPage() {
                                     rows={6}
                                     value={goodText}
                                     onChange={(e) => setGoodText(e.target.value)}
-                                    className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                    className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
                                     placeholder="e.g. aab\nababb"
                                 />
                             </div>
@@ -74,12 +74,12 @@ export default function ScorerPage() {
                                     rows={6}
                                     value={badText}
                                     onChange={(e) => setBadText(e.target.value)}
-                                    className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                    className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm text-gray-900"
                                     placeholder="e.g. bb\naba"
                                 />
                             </div>
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex ieems-center gap-3">
                                 <button
                                     type="submit"
                                     disabled={loading}
