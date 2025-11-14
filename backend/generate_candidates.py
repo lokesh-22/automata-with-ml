@@ -282,7 +282,6 @@ def generate_candidates(
     by_depth: Dict[int, Set[Expr]] = defaultdict(set)
     by_depth[1] = set(atom_list)
 
-    # Score for beam: smaller textual length + fewer ops
     def beam_score(e: Expr) -> Tuple[int,int]:
         return (expr_length(e), total_ops(e))
 
