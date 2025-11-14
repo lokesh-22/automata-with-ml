@@ -50,12 +50,12 @@ export default function ScorerPage() {
                 <div className="max-w-3xl mx-auto">
                     <div className="bg-white shadow sm:rounded-lg p-6">
                         <h1 className="text-2xl font-semibold text-gray-900">Score candidates</h1>
-                        <p className="mt-1 text-sm text-gray-500">Enter positive (good) and negative (bad) examples, one per line. The backend scorer will return the top candidates.</p>
+                        <p className="mt-1 text-sm text-black">Enter positive (good) and negative (bad) examples, one per line. The backend scorer will return the top candidates.</p>
 
                         <form onSubmit={onSubmit} className="mt-6 grid gap-6">
                             <div>
-                                <label htmlFor="good" className="block text-sm font-medium text-gray-700">Good examples</label>
-                                <p className="text-xs text-gray-400">One positive example per line</p>
+                                <label htmlFor="good" className="block text-sm font-medium text-gray-900">Good examples</label>
+                                <p className="text-xs text-gray-900">One positive example per line</p>
                                 <textarea
                                     id="good"
                                     rows={6}
@@ -67,8 +67,8 @@ export default function ScorerPage() {
                             </div>
 
                             <div>
-                                <label htmlFor="bad" className="block text-sm font-medium text-gray-700">Bad examples</label>
-                                <p className="text-xs text-gray-400">One negative example per line</p>
+                                <label htmlFor="bad" className="block text-sm font-medium text-gray-900">Bad examples</label>
+                                <p className="text-xs text-gray-900">One negative example per line</p>
                                 <textarea
                                     id="bad"
                                     rows={6}
@@ -90,12 +90,12 @@ export default function ScorerPage() {
                                 <button
                                     type="button"
                                     onClick={() => { setGoodText(''); setBadText(''); }}
-                                    className="inline-flex items-center rounded-md bg-white border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                    className="inline-flex items-center rounded-md bg-white border px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50"
                                 >
                                     Clear
                                 </button>
 
-                                <div className="ml-auto text-sm text-gray-500">Server: <span className="font-mono">http://localhost:5000/score</span></div>
+                                <div className="ml-auto text-sm text-gray-900">Server: <span className="font-mono">http://localhost:5000/score</span></div>
                             </div>
 
                             {error && <div className="text-sm text-red-600">{error}</div>}

@@ -1,5 +1,3 @@
-// Minimal regex → NFA (Thompson), NFA → DFA (subset construction), and DOT exporters
-// Supports symbols (single chars except metachars), concatenation, union '|' and Kleene '*', and parentheses.
 
 export type Transition = { from: number; to: number; symbol: string | null };
 export type NFA = { start: number; accept: number; states: number[]; transitions: Transition[] };
@@ -14,7 +12,6 @@ export function resetIds() {
 }
 
 function isOperator(c: string) {
-    // binary: |, .  unary postfix: *, +, ?
     return c === '|' || c === '*' || c === '.' || c === '+' || c === '?';
 }
 
@@ -27,7 +24,6 @@ function precedence(op: string) {
     return 0;
 }
 
-// Insert explicit concatenation operator '.'
 function insertConcats(re: string): string {
     let out = '';
     const len = re.length;
@@ -67,7 +63,6 @@ export function regexToPostfix(re: string): string {
     return out.join('');
 }
 
-// Thompson construction using postfix regex
 export function postfixToNFA(postfix: string): NFA {
     const stack: NFA[] = [];
     for (const c of postfix) {
@@ -84,7 +79,6 @@ export function postfixToNFA(postfix: string): NFA {
             ];
             stack.push({ start: s, accept: f, states: [s, f, ...n.states], transitions });
         } else if (c === '+') {
-            // one or more: similar to star but require at least one
             const n = stack.pop()!;
             const s = newState();
             const f = newState();
@@ -96,7 +90,6 @@ export function postfixToNFA(postfix: string): NFA {
             ];
             stack.push({ start: s, accept: f, states: [s, f, ...n.states], transitions });
         } else if (c === '?') {
-            // zero or one
             const n = stack.pop()!;
             const s = newState();
             const f = newState();
@@ -110,7 +103,6 @@ export function postfixToNFA(postfix: string): NFA {
         } else if (c === '.') {
             const n2 = stack.pop()!;
             const n1 = stack.pop()!;
-            // connect n1.accept -> n2.start with epsilon
             const transitions = [...n1.transitions, ...n2.transitions, { from: n1.accept, to: n2.start, symbol: null }];
             const states = [...n1.states, ...n2.states];
             stack.push({ start: n1.start, accept: n2.accept, states, transitions });
@@ -130,7 +122,6 @@ export function postfixToNFA(postfix: string): NFA {
             const states = [s, f, ...n1.states, ...n2.states];
             stack.push({ start: s, accept: f, states, transitions });
         } else {
-            // symbol
             const s = newState();
             const f = newState();
             const transitions: Transition[] = [{ from: s, to: f, symbol: c }];
@@ -139,16 +130,14 @@ export function postfixToNFA(postfix: string): NFA {
     }
     if (stack.length !== 1) throw new Error('Invalid regex/postfix; stack length != 1');
     const nfa = stack[0];
-    // normalize states unique
     nfa.states = Array.from(new Set(nfa.states));
     return nfa;
 }
 
-// NFA -> DFA subset construction
 export type DFA = {
     start: number;
     acceptStates: number[];
-    states: number[]; // ids
+    states: number[];
     transitions: { from: number; to: number; symbol: string }[];
 };
 
@@ -178,7 +167,6 @@ function move(nfa: NFA, stateSet: Set<number>, symbol: string): Set<number> {
 }
 
 export function nfaToDfa(nfa: NFA): DFA {
-    // collect alphabet
     const alphabet = new Set<string>();
     for (const t of nfa.transitions) if (t.symbol !== null) alphabet.add(t.symbol);
 
@@ -262,22 +250,13 @@ export function dfaToDot(dfa: DFA): string {
     return lines.join('\n');
 }
 
-// Sanitize a backend-provided regex string for our limited automata builder:
-// - strip leading ^ and trailing $ anchors
-// - remove non-capturing group markers '(?:' -> '('
-// - trim whitespace
-// Returns a cleaned regex suitable for feeding into the Thompson construction.
 export function sanitizeRegex(raw: string): string {
     if (!raw) return raw;
     let s = raw.trim();
-    // remove starting ^ and ending $ repeatedly
     while (s.startsWith('^')) s = s.slice(1);
     while (s.endsWith('$')) s = s.slice(0, -1);
-    // replace non-capturing groups
     s = s.replace(/\(\?:/g, '(');
-    // remove any stray anchors inside
     s = s.replace(/\^/g, '').replace(/\$/g, '');
-    // strip whitespace
     s = s.replace(/\s+/g, '');
     return s;
 }

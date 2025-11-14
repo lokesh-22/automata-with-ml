@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import argparse
 import csv
 import json
@@ -7,10 +6,6 @@ import random
 import re
 from dataclasses import dataclass, asdict
 from typing import List, Tuple, Dict
-
-# -----------------------------
-# Utilities
-# -----------------------------
 
 def load_lines(path: str) -> List[str]:
     with open(path, "r") as f:
@@ -100,9 +95,6 @@ class Metrics:
     fn_val: int
     tn_val: int
 
-# -----------------------------
-# Scoring model
-# -----------------------------
 def score_candidate(
     compiled: re.Pattern,
     body: str,
@@ -112,7 +104,6 @@ def score_candidate(
     lam_len: float, lam_ops: float, lam_overfit: float
 ) -> Metrics:
 
-    # Train preds
     y_true_tr = [1]*len(pos_tr) + [0]*len(neg_tr)
     y_pred_tr = []
     for s in pos_tr + neg_tr:
@@ -120,7 +111,6 @@ def score_candidate(
     tp_tr, fp_tr, fn_tr, tn_tr = confusion(y_true_tr, y_pred_tr)
     f1_tr, acc_tr = f1_acc_from_conf(tp_tr, fp_tr, fn_tr, tn_tr)
 
-    # Val preds
     y_true_v = [1]*len(pos_val) + [0]*len(neg_val)
     y_pred_v = []
     for s in pos_val + neg_val:
@@ -128,15 +118,12 @@ def score_candidate(
     tp_v, fp_v, fn_v, tn_v = confusion(y_true_v, y_pred_v)
     f1_val, acc_val = f1_acc_from_conf(tp_v, fp_v, fn_v, tn_v)
 
-    # Complexity
     ops = op_counts(body)
     ops_total = ops['star'] + ops['plus'] + ops['qmark'] + ops['union'] + ops['groups']
     len_body = len(body)
 
-    # Overfit penalty (only if train >> val)
     overfit = max(0.0, f1_tr - f1_val)
 
-    # Score (higher is better)
     len_pen = (len_body / 50.0)
     score = (w_f1 * f1_val) + (w_acc * acc_val) - (lam_len * len_pen) - (lam_ops * ops_total) - (lam_overfit * overfit)
 
@@ -158,9 +145,6 @@ def score_candidate(
         tp_val=tp_v, fp_val=fp_v, fn_val=fn_v, tn_val=tn_v
     )
 
-# -----------------------------
-# Main pipeline
-# -----------------------------
 def main():
     ap = argparse.ArgumentParser(description="Score candidate regexes against good/bad strings and select the best.")
     ap.add_argument("--good", default="good.txt")
@@ -169,7 +153,6 @@ def main():
     ap.add_argument("--val_frac", type=float, default=0.30, help="Validation fraction (0..1).")
     ap.add_argument("--seed", type=int, default=42)
 
-    # Weights & penalties
     ap.add_argument("--w_f1", type=float, default=0.70, help="Weight for validation F1.")
     ap.add_argument("--w_acc", type=float, default=0.20, help="Weight for validation accuracy.")
     ap.add_argument("--lam_len", type=float, default=0.10, help="Penalty weight for regex length (normalized).")
@@ -182,16 +165,13 @@ def main():
     ap.add_argument("--out_best", default="best_regex.txt")
     args = ap.parse_args()
 
-    # Load data
     pos = load_lines(args.good)
     neg = load_lines(args.bad)
     if not pos or not neg:
         raise SystemExit("ERROR: Need non-empty good.txt and bad.txt")
 
-    # Split
     (pos_tr, neg_tr), (pos_val, neg_val) = split_train_val(pos, neg, args.val_frac, args.seed)
 
-    # Load candidates
     raw_cands = load_lines(args.candidates)
     bodies = []
     for rx in raw_cands:
@@ -202,7 +182,6 @@ def main():
         else:
             bodies.append(rx)
 
-    # Score all
     results: List[Metrics] = []
     bad_compiles = 0
     for body in bodies:
@@ -223,15 +202,12 @@ def main():
     if not results:
         raise SystemExit("ERROR: No valid candidates compiled. Check candidates.txt format.")
 
-    # Rank
     results.sort(key=lambda r: (-r.score, -r.f1_val, -r.acc_val, r.len_body, r.ops_total, r.body))
 
-    # Save JSONL
     with open(args.out_jsonl, "w") as f:
         for r in results:
             f.write(json.dumps(asdict(r), ensure_ascii=False) + "\n")
 
-    # Save CSV (Top-K)
     top_k = results[:max(1, args.top_k)]
     with open(args.out_csv, "w", newline="") as f:
         w = csv.writer(f)
@@ -241,11 +217,9 @@ def main():
                         f"{r.score:.6f}", r.len_body, r.ops_total, r.star, r.plus, r.qmark, r.union, r.groups,
                         r.tp_val, r.fp_val, r.fn_val, r.tn_val])
 
-    # Save best regex
     with open(args.out_best, "w") as f:
         f.write(results[0].regex + "\n")
 
-    # Console summary
     print(f"Scored {len(results)} candidates (skipped {bad_compiles} that failed to compile).")
     print(f"Saved: {args.out_jsonl}, {args.out_csv}, {args.out_best}")
     print("\nTop candidates:")
