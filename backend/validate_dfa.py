@@ -45,7 +45,6 @@ def load_dfa_csv(path: str, alphabet: List[str]) -> Tuple[int, Set[int], Dict[in
             for j, a in enumerate(alphabet, start=1):
                 nxt = row[j]
                 if nxt == "":
-                    # Missing transition (will be flagged in determinism/totality check)
                     continue
                 trans[s][a] = int(nxt)
             acc = int(row[-1])
@@ -66,20 +65,16 @@ def check_deterministic_total(start: int, trans: Dict[int,Dict[str,int]], alphab
     ok = True
     issues = []
     states = set(trans.keys())
-    # closed set includes targets
     for s, m in trans.items():
-        # determinism = at most one target per (s,a)
         for a in alphabet:
             if a not in m:
                 ok = False
                 issues.append(f"Missing transition: δ({s},{a})")
-    # closure: all targets should be in state set (we allow unseen targets but note them)
     targets = {t for m in trans.values() for t in m.values()}
     unknown_targets = [t for t in targets if t not in states]
     if unknown_targets:
         ok = False
         issues.append(f"Transitions to unknown states: {sorted(set(unknown_targets))}")
-    # reachability
     reachable = set()
     q = deque([start])
     while q:
@@ -243,7 +238,6 @@ def eps_closure(states:Set[NFAState])->Set[NFAState]:
     return cl
 
 def nfa_to_dfa(nfa:NFA, alphabet:List[str]):
-    # map id
     idmap={s:s.eid for s in nfa.states}
     start_set=frozenset(q.eid for q in eps_closure({nfa.start}))
     idx_of={start_set:0}; sets=[start_set]; start=0
@@ -267,9 +261,6 @@ def nfa_to_dfa(nfa:NFA, alphabet:List[str]):
             trans[i][a]=idx_of[U]
     return start, accepts, trans
 
-# ---------------------------
-# Equivalence check (product automaton on symmetric difference)
-# ---------------------------
 def complete_with_sink(start:int, accepts:Set[int], trans:Dict[int,Dict[str,int]], alphabet:List[str]):
     states=set(trans.keys()) | {t for m in trans.values() for t in m.values()}
     sink = max(states) + 1 if states else 1
@@ -286,7 +277,6 @@ def equivalent(dfa1, dfa2, alphabet: List[str]) -> bool:
     s2,a2,t2 = dfa2
     s1,a1,t1,_ = complete_with_sink(s1,set(a1),{k:dict(v) for k,v in t1.items()},alphabet)
     s2,a2,t2,_ = complete_with_sink(s2,set(a2),{k:dict(v) for k,v in t2.items()},alphabet)
-    # BFS on product; accepting if exactly one component is accepting
     seen=set()
     dq=deque([(s1,s2)])
     while dq:
@@ -297,14 +287,11 @@ def equivalent(dfa1, dfa2, alphabet: List[str]) -> bool:
         in1 = 1 if u in a1 else 0
         in2 = 1 if v in a2 else 0
         if in1 ^ in2:
-            return False  # found witness string differentiating them
+            return False
         for a in alphabet:
             dq.append((t1[u][a], t2[v][a]))
     return True
 
-# ---------------------------
-# Main
-# ---------------------------
 def main():
     ap = argparse.ArgumentParser(description="Validate a DFA: structure, data fit, and equivalence checks.")
     ap.add_argument("--dfa_csv", default="min_dfa_transition_table.csv", help="DFA to validate (use minimized CSV by default).")
@@ -318,17 +305,14 @@ def main():
     alphabet=list(args.alphabet)
     if len(alphabet)!=2: raise SystemExit("❌ Alphabet must be exactly two symbols.")
 
-    # Load DFA
     start, accepts, trans = load_dfa_csv(args.dfa_csv, alphabet)
 
-    # 1) Structure
     ok, issues = check_deterministic_total(start, trans, alphabet)
     print("== Structural checks ==")
     print(f"Deterministic & total transitions: {'OK' if ok else 'PROBLEMS'}")
     for msg in issues:
         print(" -", msg)
 
-    # 2) Data fit
     pos = load_lines(args.good) if args.good else []
     neg = load_lines(args.bad) if args.bad else []
     if pos or neg:
@@ -339,7 +323,6 @@ def main():
     else:
         print("\n== Data fit ==\n(no data provided)")
 
-    # 3) Equivalence (optional)
     if args.regex:
         rx_body = sanitize_regex(args.regex, alphabet)
         tokens = tokenize(rx_body)

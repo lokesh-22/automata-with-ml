@@ -37,7 +37,6 @@ def sanitize_regex(user_rx: str, alphabet: str) -> str:
     if user_rx.endswith("$"): user_rx = user_rx[:-1]
 
     # Allow non-capturing groups (?:...) by removing "?:"
-    # We do this safely: replace "(?:" with "(" repeatedly.
     user_rx = re.sub(r"\(\?:", "(", user_rx)
 
     # Remove whitespace (treat as literal-free formatting)
@@ -185,7 +184,6 @@ class NFA:
                         acc.eps.update([a.start, t])
                     stack.append(Fragment(s, {t}))
                 elif tok == "+":
-                    # one or more: A+ = A A*
                     s = nfa.new_state()
                     t = nfa.new_state()
                     s.eps.add(a.start)

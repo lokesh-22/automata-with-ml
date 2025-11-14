@@ -2,9 +2,9 @@ import random
 import re
 
 # --------------------------------------------------------
-# ✅ HARD-CODED CONFIG (you only change TARGET_REGEX)
+# HARD-CODED CONFIG (you only change TARGET_REGEX)
 # --------------------------------------------------------
-TARGET_REGEX = r"^(?:a|b)*abb$"        # <--- PUT YOUR TARGET REGEX HERE
+TARGET_REGEX = r"^a(?:a|b)*a$"        # <--- PUT YOUR TARGET REGEX HERE
 ALPHABET = ["a", "b"]              # strict: only two symbols allowed
 NUM_POS = 300                      # number of positive samples
 NUM_NEG = 300                      # number of negative samples
@@ -74,7 +74,7 @@ while len(positives) < NUM_POS and attempts < max_attempts:
     attempts += 1
 
 if len(positives) < NUM_POS:
-    print(f"⚠️ Warning: Only found {len(positives)} positives.")
+    print(f"WARNING: Only found {len(positives)} positives.")
 
 
 # --------------------------------------------------------
@@ -105,7 +105,7 @@ while len(negatives) < NUM_NEG and attempts < max_attempts:
     attempts += 1
 
 if len(negatives) < NUM_NEG:
-    print(f"⚠️ Warning: Only found {len(negatives)} negatives.")
+    print(f"WARNING: Only found {len(negatives)} negatives.")
 
 
 # --------------------------------------------------------
@@ -119,7 +119,7 @@ with open("bad.txt", "w") as b:
     for s in sorted(negatives, key=lambda x: (len(x), x)):
         b.write(s + "\n")
 
-print("✅ Dataset generation finished!")
-print(f"✅ good.txt : {len(positives)} samples")
-print(f"✅ bad.txt  : {len(negatives)} samples")
-print(f"✅ Regex used: {TARGET_REGEX}")
+print("Dataset generation finished!")
+print(f"Wrote good.txt : {len(positives)} samples")
+print(f"Wrote bad.txt  : {len(negatives)} samples")
+print(f"Regex used: {TARGET_REGEX}")

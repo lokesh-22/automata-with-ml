@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+  "build:css": "npx tailwindcss -i ./app/globals.css -o ./public/tailwind.css --minify",
+    "postinstall": "npm run build:css"
   },
   "dependencies": {
     "next": "16.0.3",
@@ -15,7 +17,7 @@
     "viz.js": "2.1.2"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

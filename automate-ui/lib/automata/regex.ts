@@ -14,11 +14,14 @@ export function resetIds() {
 }
 
 function isOperator(c: string) {
-    return c === '|' || c === '*' || c === '.';
+    // binary: |, .  unary postfix: *, +, ?
+    return c === '|' || c === '*' || c === '.' || c === '+' || c === '?';
 }
 
 function precedence(op: string) {
     if (op === '*') return 3;
+    if (op === '+') return 3;
+    if (op === '?') return 3;
     if (op === '.') return 2;
     if (op === '|') return 1;
     return 0;
@@ -34,7 +37,7 @@ function insertConcats(re: string): string {
         if (c === '(' || c === '|') continue;
         if (i + 1 < len) {
             const d = re[i + 1];
-            if (d === '*' || d === '|' || d === ')') continue;
+            if (d === '*' || d === '|' || d === ')' || d === '+' || d === '?') continue;
             out += '.';
         }
     }
@@ -76,6 +79,30 @@ export function postfixToNFA(postfix: string): NFA {
                 { from: s, to: n.start, symbol: null },
                 { from: s, to: f, symbol: null },
                 { from: n.accept, to: n.start, symbol: null },
+                { from: n.accept, to: f, symbol: null },
+                ...n.transitions,
+            ];
+            stack.push({ start: s, accept: f, states: [s, f, ...n.states], transitions });
+        } else if (c === '+') {
+            // one or more: similar to star but require at least one
+            const n = stack.pop()!;
+            const s = newState();
+            const f = newState();
+            const transitions: Transition[] = [
+                { from: s, to: n.start, symbol: null },
+                { from: n.accept, to: n.start, symbol: null },
+                { from: n.accept, to: f, symbol: null },
+                ...n.transitions,
+            ];
+            stack.push({ start: s, accept: f, states: [s, f, ...n.states], transitions });
+        } else if (c === '?') {
+            // zero or one
+            const n = stack.pop()!;
+            const s = newState();
+            const f = newState();
+            const transitions: Transition[] = [
+                { from: s, to: n.start, symbol: null },
+                { from: s, to: f, symbol: null },
                 { from: n.accept, to: f, symbol: null },
                 ...n.transitions,
             ];
@@ -233,4 +260,24 @@ export function dfaToDot(dfa: DFA): string {
     }
     lines.push('}');
     return lines.join('\n');
+}
+
+// Sanitize a backend-provided regex string for our limited automata builder:
+// - strip leading ^ and trailing $ anchors
+// - remove non-capturing group markers '(?:' -> '('
+// - trim whitespace
+// Returns a cleaned regex suitable for feeding into the Thompson construction.
+export function sanitizeRegex(raw: string): string {
+    if (!raw) return raw;
+    let s = raw.trim();
+    // remove starting ^ and ending $ repeatedly
+    while (s.startsWith('^')) s = s.slice(1);
+    while (s.endsWith('$')) s = s.slice(0, -1);
+    // replace non-capturing groups
+    s = s.replace(/\(\?:/g, '(');
+    // remove any stray anchors inside
+    s = s.replace(/\^/g, '').replace(/\$/g, '');
+    // strip whitespace
+    s = s.replace(/\s+/g, '');
+    return s;
 }

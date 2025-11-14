@@ -24,7 +24,7 @@ def ensure_anchored(rx: str) -> str:
         rx = rx + "$"
     return rx
 
-def try_compile(rx: string):
+def try_compile(rx: str):
     try:
         return re.compile(rx)
     except re.error:
@@ -75,10 +75,8 @@ def op_counts(regex_body: str) -> Dict[str, int]:
     return ops
 
 def strip_anchor_and_noncap(rx: str) -> str:
-    # remove ^...$ wrapper if present; it’s fine if absent
     if rx.startswith("^"): rx = rx[1:]
     if rx.endswith("$"):  rx = rx[:-1]
-    # leave non-capturing as-is; length still penalizes them (?: )
     return rx
 
 @dataclass
@@ -139,7 +137,6 @@ def score_candidate(
     overfit = max(0.0, f1_tr - f1_val)
 
     # Score (higher is better)
-    # Normalize len penalty by a soft scale so lengths ~30–60 don’t dominate
     len_pen = (len_body / 50.0)
     score = (w_f1 * f1_val) + (w_acc * acc_val) - (lam_len * len_pen) - (lam_ops * ops_total) - (lam_overfit * overfit)
 
@@ -189,7 +186,7 @@ def main():
     pos = load_lines(args.good)
     neg = load_lines(args.bad)
     if not pos or not neg:
-        raise SystemExit("❌ Need non-empty good.txt and bad.txt")
+        raise SystemExit("ERROR: Need non-empty good.txt and bad.txt")
 
     # Split
     (pos_tr, neg_tr), (pos_val, neg_val) = split_train_val(pos, neg, args.val_frac, args.seed)
@@ -198,16 +195,11 @@ def main():
     raw_cands = load_lines(args.candidates)
     bodies = []
     for rx in raw_cands:
-        # Allow either anchored or body; compute body for metrics consistently
         rx = rx.strip()
         if rx.startswith("^") and rx.endswith("$"):
             body = rx[1:-1]
-            if body.startswith("(?:") and body.endswith(")"):
-                # optional: keep as-is; we don't try to unwrap non-capturing
-                pass
             bodies.append(body)
         else:
-            # treat as body
             bodies.append(rx)
 
     # Score all
@@ -229,7 +221,7 @@ def main():
         results.append(m)
 
     if not results:
-        raise SystemExit("❌ No valid candidates compiled. Check candidates.txt format.")
+        raise SystemExit("ERROR: No valid candidates compiled. Check candidates.txt format.")
 
     # Rank
     results.sort(key=lambda r: (-r.score, -r.f1_val, -r.acc_val, r.len_body, r.ops_total, r.body))
@@ -254,9 +246,9 @@ def main():
         f.write(results[0].regex + "\n")
 
     # Console summary
-    print(f"✅i Scored {len(results)} candidates (skipped {bad_compiles} that failed to compile).")
-    print(f"📄 Saved: {args.out_jsonl}, {args.out_csv}, {args.out_best}")
-    print("\n🏆 Top candidates:")
+    print(f"Scored {len(results)} candidates (skipped {bad_compiles} that failed to compile).")
+    print(f"Saved: {args.out_jsonl}, {args.out_csv}, {args.out_best}")
+    print("\nTop candidates:")
     for i, r in enumerate(top_k, start=1):
         print(f"{i:2d}. {r.regex} | F1_val={r.f1_val:.4f} Acc_val={r.acc_val:.4f}  "
               f"F1_tr={r.f1_tr:.4f}  Score={r.score:.5f}  len={r.len_body} ops={r.ops_total}")
